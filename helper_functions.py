@@ -17,9 +17,21 @@ warnings.filterwarnings("ignore")
 import pyomo.environ as pyo
 from itertools import combinations
 import time
+import tqdm.notebook as tq
 
 # %%
-
+'''
+test_data = pd.DataFrame(data={'P_MAX': [20,10], 'P_MIN':[0,5], 'E_MAX':[25, 30], 'E_MIN':[15,20]})
+model_direct = build_model_direct(test_data, [0,3], 1)
+A_poly, b_poly = generate_system_matrix(test_data, [0,3], 1)
+model_ul = build_model_ul(A_poly, b_poly, [0,3])
+solver = pyo.SolverFactory('gurobi')
+solver.options['DualReductions'] = 0
+solver.solve(model_direct, tee=True)
+solver.solve(model_ul, tee=False)
+print(model_direct.obj())
+print(model_ul.obj())
+'''
 
 def rescale_ev_data(ev_data, date_sample, del_t, restrict_stop_time=False, total_time_steps=36, verbose_=1000):
     ev_data = ev_data_all[ev_data_all['START'].dt.date == date_sample.date()]
@@ -118,9 +130,10 @@ def build_model_direct(df_for_opt, f_windw, del_t):
     model = pyo.ConcreteModel()
 
     # Sets
-    T = int(f_windw[1]-f_windw[0]) # Total time steps
+    T = int((f_windw[1]-f_windw[0])/del_t) # Total time steps
     model.T = pyo.Set(initialize=np.arange(T), doc='Set of time-steps') # Time steps
     model.N = pyo.Set(initialize=np.arange(len(df_for_opt)), doc='Set of EVs') # EV transactions
+    model.T_1 = pyo.Set(initialize=np.arange(T+1), doc='Set of T+1 time steps ') # Time steps except the first one
 
     # Parameters
     model.p_max = pyo.Param(model.N, initialize={i :df_for_opt['P_MAX'].iloc[i] for i in range(len(df_for_opt))}, doc='Maximum charging power of EVs')
@@ -132,7 +145,7 @@ def build_model_direct(df_for_opt, f_windw, del_t):
     # Variables
 
     model.p = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, doc='Charging power of EVs')
-    model.e = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, doc='State of energy of EVs (Always starts from 0 and has to end between [e_min, e_max])')
+    model.e = pyo.Var(model.N, model.T_1, within=pyo.NonNegativeReals, doc='State of energy of EVs (Always starts from 0 and has to end between [e_min, e_max])')
     model.p_agg = pyo.Var(model.T, within=pyo.NonNegativeReals, doc='Aggregated charging power of EVs')
     model.sigma = pyo.Var(within=pyo.NonNegativeReals, doc='Auxillary variable for aggregated charging power of EVs')
 
@@ -146,7 +159,7 @@ def build_model_direct(df_for_opt, f_windw, del_t):
 
     #Constraint on final energy
     def final_energy_constraint_rule(model, n):
-        return model.e_min[n], model.e[n,T-1], model.e_max[n]
+        return model.e_min[n], model.e[n,T], model.e_max[n]
     model.final_energy_constraint = pyo.Constraint(model.N, rule=final_energy_constraint_rule, doc='Final energy constraint of EVs')
 
     #Constraint on energy and power
@@ -155,7 +168,7 @@ def build_model_direct(df_for_opt, f_windw, del_t):
             return model.e[n,t] == 0
         else:
             return model.e[n,t] == model.e[n,t-1] + model.p[n,t-1]*model.del_t
-    model.energy_power_constraint = pyo.Constraint(model.N, model.T, rule=energy_power_constraint_rule, doc='Energy and power constraint of EVs')
+    model.energy_power_constraint = pyo.Constraint(model.N, model.T_1, rule=energy_power_constraint_rule, doc='Energy and power constraint of EVs')
         
 
     #Constraint on aggregated power
@@ -182,7 +195,7 @@ def calculate_aggregate_ul(ev_data, f_windw, del_t):
     ul_dict = {}
 
     for rowx, one_ev_data in ev_data.iterrows():
-        u,l = calculate_u_l(one_ev_data.P_MIN, one_ev_data.P_MAX, one_ev_data.E_MIN, one_ev_data.E_MAX, del_t, int(f_windw[1]-f_windw[0]))
+        u,l = calculate_u_l(one_ev_data.P_MIN, one_ev_data.P_MAX, one_ev_data.E_MIN, one_ev_data.E_MAX, del_t, int((f_windw[1]-f_windw[0])/del_t))
         ul_dict[f'EV#{rowx+1} u']=u
         ul_dict[f'EV#{rowx+1} l'] = l
     ul_df = pd.DataFrame(ul_dict)
@@ -225,20 +238,20 @@ def generate_system_matrix(ev_data, f_windw, del_t):
     ul_aggregate = calculate_aggregate_ul(ev_data, f_windw, del_t)
     u = ul_aggregate['Aggregate u'].values
     l = ul_aggregate['Aggregate l'].values
-    T = int(f_windw[1]-f_windw[0])
+    T = int((f_windw[1]-f_windw[0])/del_t)
     A = generate_combinations_matrix(T)
     b = generate_polytope_b_matrix(T)
     A_poly = np.vstack([A, -A])
     b_poly = np.vstack([np.matmul(b,np.array(u[1:])).reshape((len(b),1)),-np.matmul(b,np.array(l[1:])).reshape((len(b),1))])
     return A_poly, b_poly
 
-def build_model_ul(A,b, f_windw):
+def build_model_ul(A,b, f_windw, del_t):
 
 
     model = pyo.ConcreteModel()
     # Sets
 
-    model.T = pyo.Set(initialize=np.arange(int(f_windw[1]-f_windw[0])), doc='Set of time-steps') # Time steps
+    model.T = pyo.Set(initialize=np.arange(int((f_windw[1]-f_windw[0])/del_t)), doc='Set of time-steps') # Time steps
     model.row = pyo.Set(initialize=np.arange(A.shape[0]), doc='Set of rows of A') # Rows of A
     # Parameters
     model.A = pyo.Param(model.row, model.T, mutable=True, doc='Matrix A')
@@ -257,7 +270,7 @@ def build_model_ul(A,b, f_windw):
     # Constraints
     # Constraint for A[row,t]*p_agg[t]<=b[row]
     def ul_constraint_rule(model, row):
-        return sum(model.A[row,t]*model.p_agg[t] for t in model.T) <= model.b[row]
+        return sum(model.A[row,t]*model.p_agg[t]*del_t for t in model.T) <= model.b[row]
     model.ul_constraint = pyo.Constraint(model.row, rule=ul_constraint_rule, doc='Ul (Ax<b) constraint of EVs')
 
     # Constraint on aggregated energy
@@ -284,96 +297,88 @@ def multiply_transactions(ev_data_all, n_times,date_sample,del_t, f_windw, verbo
         data_for_opt = process_for_opt(scalled_ev_data1, f_windw, del_t, verbose_)
 
     return data_for_opt
-#%%
 
+def single_run(data_for_opt, f_windw, del_t, verbose_=False):
+    tic_direct = time.time()
+    model_direct = build_model_direct(data_for_opt, f_windw, del_t)
+    toc_direct = time.time()
+    bt_direct = toc_direct-tic_direct
+    if verbose_:
+        print('Time taken to build model using direct method: ', bt_direct)
+
+    tic_ul = time.time()
+    A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
+    model_ul = build_model_ul(A_poly, b_poly, f_windw, del_t)
+    toc_ul = time.time()
+    bt_ul = toc_ul-tic_ul
+    if verbose_:
+        print('Time taken to build model using ul method: ', bt_ul)
+
+    solver = pyo.SolverFactory('gurobi')
+
+    tic_solve_direct = time.time()
+    res_direct = solver.solve(model_direct, tee=False)
+    toc_solve_direct = time.time()
+    st_direct = toc_solve_direct-tic_solve_direct
+    if verbose_:
+        print('Time taken to solve model using direct method: ', st_direct)
+
+    tic_solve_ul = time.time()
+    res_ul = solver.solve(model_ul, tee=False)   
+    toc_solve_ul = time.time()
+    st_ul = toc_solve_ul-tic_solve_ul
+    if verbose_:
+        print('Time taken to solve model using ul method: ', st_ul)
+
+    if verbose_:
+        print('Objective value for direct method: ', model_direct.obj())
+        print('Objective value for ul method: ', model_ul.obj())
+        print(f'Speed up in build time (%): {(bt_direct-bt_ul)/(bt_direct)*100}')
+        print(f'Speed up in solve time (%): {(st_direct-st_ul)/(st_direct)*100}')
+        print(f'Total speed up (%): {(bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100}')
+
+
+
+
+
+    res_dict = {'No of EVs': len(data_for_opt),
+                'No of time steps': int(f_windw[1] - f_windw[0]),
+                'Time step size (H)': del_t,
+                'Direct optimization': {'Build time (s)': bt_direct,
+                                        'Solve time (s)': st_direct,
+                                        'Objective value': model_direct.obj(),
+                                        'info': res_direct},
+                'UL optimization': {'Build time (s)': bt_ul,
+                                    'Solve time (s)': st_ul,
+                                    'Objective value': model_ul.obj(),
+                                    'info': res_ul},
+                'Speed up in build time (%)': (bt_direct-bt_ul)/(bt_direct)*100,
+                'Speed up in solve time (%)': (st_direct-st_ul)/(st_direct)*100,
+                'Total speed up (%)': (bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100}
+    
+    return res_dict
+
+def log_model_info(model, file_name='log.txt'):
+    with open(file_name, 'w') as output_file:
+            model.pprint(output_file)
+# %%
 
 ev_data_all = pd.read_pickle(config.ev_data_all)
 date_sample = dt.datetime(2022, 8, 1)
-del_t = 1 # in hours
-verbose_ = 1000
-f_windw = [18*1/del_t,21*1/del_t] # in hours
-n_days = 24
-data_for_opt = multiply_transactions(ev_data_all, n_days,date_sample,del_t, f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
+verbose_ = 0
+f_windw = [18,21] # in hours
 
-tic_direct = time.time()
-model_direct = build_model_direct(data_for_opt, f_windw, del_t)
-toc_direct = time.time()
-bt_direct = toc_direct-tic_direct
-if verbose_:
-    print('Time taken to build model using direct method: ', bt_direct)
+n_days = range(1,30)
 
-tic_ul = time.time()
-A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
-model_ul = build_model_ul(A_poly, b_poly, f_windw)
-toc_ul = time.time()
-bt_ul = toc_ul-tic_ul
-if verbose_:
-    print('Time taken to build model using ul method: ', bt_ul)
+re_list = []
 
-solver = pyo.SolverFactory('gurobi')
+for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
+    data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
+    for ts in tq.tqdm([1, 0.75, 0.5, 0.25], position=0,leave=True, desc='Time step size'):
+        res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
+        re_list.append(res_dict)
 
-tic_solve_direct = time.time()
-solver.solve(model_direct, tee=False)
-toc_solve_direct = time.time()
-st_direct = toc_solve_direct-tic_solve_direct
-if verbose_:
-    print('Time taken to solve model using direct method: ', st_direct)
+d = pd.DataFrame(re_list)
 
-tic_solve_ul = time.time()
-solver.solve(model_ul, tee=False)   
-toc_solve_ul = time.time()
-st_ul = toc_solve_ul-tic_solve_ul
-if verbose_:
-    print('Time taken to solve model using ul method: ', st_ul)
-
-if verbose_:
-    print('Objective value for direct method: ', model_direct.obj())
-    print('Objective value for ul method: ', model_ul.obj())
-    print(f'Speed up in build time (%): {(bt_direct-bt_ul)/(bt_direct)*100}')
-    print(f'Speed up in solve time (%): {(st_direct-st_ul)/(st_direct)*100}')
-    print(f'Total speed up (%): {(bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100}')
-
-
-
-
-
-
-
-
-
-#%%
-
-
-
-
-
-#%%
-solver.solve(model_ul, tee=True)
-
-#%%
-
-# Plot step of model.p_agg
-plt.figure(figsize=(10,5))
-plt.step(np.arange(len(model_direct.p_agg.get_values().values())),model_direct.p_agg.get_values().values())
-plt.step(np.arange(len(model_ul.p_agg.get_values().values())),model_direct.p_agg.get_values().values(), linestyle='--')
-plt.xlabel('Time step')
-plt.ylabel('Aggregated power (kW)')
-plt.show()
 # %%
-# Step plot the individual model.p for random 20 EVs
-plt.figure(figsize=(10,5))
-for i in np.random.randint(0, len(model_direct.N), 20):
-    plt.step(np.arange(len([model_direct.p[i,t].value for t in model_direct.T])),[model_direct.p[i,t].value for t in model_direct.T])
-plt.xlabel('Time step')
-plt.ylabel('Power (kW)')
-plt.show()
-# %%
-# Plot the final energy of the EVs
-plt.figure(figsize=(10,5))
-plt.scatter(np.arange(len(model_direct.N)),[model_direct.e[i,f_windw[1]-f_windw[0]-1].value for i in model_direct.N])
-plt.xlabel('EV')
-plt.ylabel('Final energy (kWh)')
-plt.show()
-# %%
-
-
+d.to_pickle('time_comparison.pkl')
