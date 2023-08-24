@@ -17,7 +17,10 @@ warnings.filterwarnings("ignore")
 import pyomo.environ as pyo
 from itertools import combinations
 import time
-import tqdm.notebook as tq
+import psutil
+import os
+
+process = psutil.Process(os.getpid())
 
 # %%
 '''
@@ -32,9 +35,100 @@ solver.solve(model_ul, tee=False)
 print(model_direct.obj())
 print(model_ul.obj())
 '''
+def display_matrix(a):
+    text = r'$\left[\begin{array}{*{'
+    text += str(len(a[0]))
+    text += r'}c}'
+    text += '\n'
+    for x in range(len(a)):
+        for y in range(len(a[x])):
+            text += str(a[x][y])
+            text += r' & '
+        text = text[:-2]
+        text += r'\\'
+        text += '\n'
+    text += r'\end{array}\right]$'
+    print(text)
+    
+def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=None):
+    ''' This function plots the feasibility test for the given upper and lower limits of a EV for a provided feasible and infeasible power profile. C.F. Lemma 1 (Ordered UL repreentation) in the paper.
+    param u: upper limit of the EV
+    param l: lower limit of the EV
+    param p_feasible: feasible power profile
+    param p_infeasible: infeasible power profile
+    param fsize: figure size
+    param save_path: path to save the figure
+    return: None
+    '''
+    t_steps = len(u)
+    plt.rcParams.update({'font.size': 20})
+    fig, ax = plt.subplots(1,2,figsize=fsize, sharey=True)
+    plt.subplots_adjust(wspace=0.05)
+
+    ax[0].plot(np.arange(t_steps),u, marker='o', label=r'$\vec{u}$', color='red',linewidth=2) # UPPER LIMIT
+    ax[0].plot(np.arange(t_steps),l, marker='o', label=r'$\vec{l}$', color='red', linestyle='--',linewidth=2) # LOWER LIMIT
+    p_up = [0] + list(np.cumsum(np.sort(p_feasible)[::-1]))  # sort decending Integral of descending
+    p_low = [0] + list(np.cumsum(np.sort(p_feasible)) ) # sort ascending  INTEGRAL OF ASCENDING
+    ax[0].plot(np.arange(t_steps),p_up, marker='o', label=r'$\sum_k$ descending $(\vec{p}_k)$', color='blue',linewidth=2)
+    ax[0].plot(np.arange(t_steps),p_low, marker='o', label=r'$\sum_k$ ascending $(\vec{p}_k)$', color='blue', linestyle='--',linewidth=2)
+    ax[0].set_xticks(np.arange(t_steps))
+    ax[0].set_xlabel('time intervals ($k$)')
+    ax[0].set_ylabel('Energy (kWh)')
+    # ax[0].text(0.75, 0.8,r'$\vec{p}$='+str(p_feasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[0].transAxes)
+    ax[0].grid(linewidth=0.5 )
+
+
+    ax[1].plot(np.arange(t_steps),u, marker='o', label=r'$\vec{u}$', color='red',linewidth=2)
+    ax[1].plot(np.arange(t_steps),l, marker='o', label=r'$\vec{l}$', color='red', linestyle='--',linewidth=2)
+    p_up = [0] +list(np.cumsum(np.sort(p_infeasible)[::-1]))  # sort decending
+    p_low =[0] + list(np.cumsum(np.sort(p_infeasible)))  # sort ascending
+    ax[1].plot(np.arange(t_steps),p_up, marker='o', label=r'descending $\vec{p}$', color='blue',linewidth=2)
+    ax[1].plot(np.arange(t_steps),p_low, marker='o', label=r'ascending $\vec{p}$', color='blue', linestyle='--',linewidth=2)
+    ax[1].set_xticks(np.arange(t_steps))
+    ax[1].set_xlabel('time intervals ($k$)')
+    # ax[1].text(0.75, 0.08,r'$\vec{p}$='+str(p_infeasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[1].transAxes)
+    ax[1].grid(linewidth=0.5 )
+
+
+    # Annotate infeasible point
+    # Find the index where p_up is more than u or p_low is less than l
+
+
+    inf_index_low= np.where((np.array(p_low)<np.array(l)))
+    inf_index_up = np.where((np.array(p_up)>np.array(u)))
+    for i in inf_index_low[0]:
+        ax[1].annotate('Infeasible', xy=(i, p_low[i]), xytext=(i, p_low[i]+2),
+                arrowprops=dict(facecolor='black', shrink=0.05),
+                )
+    for i in inf_index_up[0]:
+        ax[1].annotate('Infeasible', xy=(i, p_up[i]), xytext=(i+0.5, p_up[i]-2),
+                arrowprops=dict(facecolor='black', shrink=0.04, width=1, headwidth=6),
+                )
+        ax[1].scatter(i, p_up[i], marker='*', color='m', s=330, zorder=10)
+
+    #make a single legend for the figure
+    handles, labels = ax[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=4)
+
+    plt.rcParams.update({'font.size': 12})
+    a = plt.axes([.145, .77, .12, .1])
+    plt.step(np.arange(t_steps+1),[0]+list(p_feasible) + [p_feasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=2)
+    # plt.text(0.245, 0.88,r'$\vec{p}$='+str(p_feasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[0].transAxes)
+    plt.xticks(np.arange(t_steps))
+    # y-grid only
+    plt.grid(axis='y', linestyle='--', linewidth=1)
+
+    b = plt.axes([.54, .77, .12, .1])
+    plt.step(np.arange(t_steps+1),[0]+list(p_infeasible) + [p_infeasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=2)
+    plt.xticks(np.arange(t_steps))
+    plt.grid(axis='y', linestyle='--', linewidth=1)
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+    
+    return None
 
 def rescale_ev_data(ev_data, date_sample, del_t, restrict_stop_time=False, total_time_steps=36, verbose_=1000):
-    ev_data = ev_data_all[ev_data_all['START'].dt.date == date_sample.date()]
+    ev_data = ev_data[ev_data['START'].dt.date == date_sample.date()]
 
     if verbose_ >=500:
         print(f'There are a total of {len(ev_data)} transactions on {date_sample.date()}')
@@ -306,6 +400,7 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
     if verbose_:
         print('Time taken to build model using direct method: ', bt_direct)
 
+    bm_direct = process.memory_info().rss # Unit in bytes
     tic_ul = time.time()
     A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
     model_ul = build_model_ul(A_poly, b_poly, f_windw, del_t)
@@ -315,7 +410,10 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
         print('Time taken to build model using ul method: ', bt_ul)
 
     solver = pyo.SolverFactory('gurobi')
-
+    bm_direct_end = process.memory_info().rss # Unit in bytes
+    if verbose_:
+        print('Memory used by direct method: ', bm_direct_end-bm_direct)
+    
     tic_solve_direct = time.time()
     res_direct = solver.solve(model_direct, tee=False)
     toc_solve_direct = time.time()
@@ -324,11 +422,13 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
         print('Time taken to solve model using direct method: ', st_direct)
 
     tic_solve_ul = time.time()
-    res_ul = solver.solve(model_ul, tee=False)   
+    res_ul = solver.solve(model_ul, tee=False)
+    bm_ul_end = process.memory_info().rss # Unit in bytes   
     toc_solve_ul = time.time()
     st_ul = toc_solve_ul-tic_solve_ul
     if verbose_:
         print('Time taken to solve model using ul method: ', st_ul)
+        print('Memory used by ul method: ', bm_ul_end-bm_direct_end)
 
     if verbose_:
         print('Objective value for direct method: ', model_direct.obj())
@@ -342,7 +442,7 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
 
 
     res_dict = {'No of EVs': len(data_for_opt),
-                'No of time steps': int(f_windw[1] - f_windw[0]),
+                'No of time steps': int((1/del_t)*(f_windw[1] - f_windw[0])),
                 'Time step size (H)': del_t,
                 'Direct optimization': {'Build time (s)': bt_direct,
                                         'Solve time (s)': st_direct,
@@ -354,31 +454,13 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
                                     'info': res_ul},
                 'Speed up in build time (%)': (bt_direct-bt_ul)/(bt_direct)*100,
                 'Speed up in solve time (%)': (st_direct-st_ul)/(st_direct)*100,
-                'Total speed up (%)': (bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100}
+                'Total speed up (%)': (bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100,
+                'Memory used by direct method (bytes)': bm_direct_end-bm_direct,
+                'Memory used by ul method (bytes)': bm_ul_end-bm_direct_end,
+                'Memory saved by ul method compared to direct (bytes)': bm_direct-bm_ul_end }
     
     return res_dict
 
 def log_model_info(model, file_name='log.txt'):
     with open(file_name, 'w') as output_file:
             model.pprint(output_file)
-# %%
-
-ev_data_all = pd.read_pickle(config.ev_data_all)
-date_sample = dt.datetime(2022, 8, 1)
-verbose_ = 0
-f_windw = [18,21] # in hours
-
-n_days = range(1,30)
-
-re_list = []
-
-for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
-    data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
-    for ts in tq.tqdm([1, 0.75, 0.5, 0.25], position=0,leave=True, desc='Time step size'):
-        res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
-        re_list.append(res_dict)
-
-d = pd.DataFrame(re_list)
-
-# %%
-d.to_pickle('time_comparison.pkl')
