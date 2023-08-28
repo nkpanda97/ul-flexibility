@@ -19,6 +19,7 @@ from itertools import combinations
 import time
 import psutil
 import os
+import tracemalloc
 
 process = psutil.Process(os.getpid())
 
@@ -218,8 +219,12 @@ def process_for_opt(ev_df, f_windw, del_t, verbose_=1000):
 
     return df_for_opt
 
-def build_model_direct(df_for_opt, f_windw, del_t):
+def build_model_direct(data_for_opt):
     # Pyomo model
+
+    df_for_opt = data_for_opt[0]
+    f_windw = data_for_opt[1]
+    del_t = data_for_opt[2]
 
     model = pyo.ConcreteModel()
 
@@ -339,9 +344,13 @@ def generate_system_matrix(ev_data, f_windw, del_t):
     b_poly = np.vstack([np.matmul(b,np.array(u[1:])).reshape((len(b),1)),-np.matmul(b,np.array(l[1:])).reshape((len(b),1))])
     return A_poly, b_poly
 
-def build_model_ul(A,b, f_windw, del_t):
+def build_model_ul(data_for_opt):
 
-
+    A = data_for_opt[0]
+    b = data_for_opt[1]
+    f_windw = data_for_opt[2]
+    del_t = data_for_opt[3]
+    
     model = pyo.ConcreteModel()
     # Sets
 
@@ -392,72 +401,53 @@ def multiply_transactions(ev_data_all, n_times,date_sample,del_t, f_windw, verbo
 
     return data_for_opt
 
-def single_run(data_for_opt, f_windw, del_t, verbose_=False):
-    tic_direct = time.time()
-    model_direct = build_model_direct(data_for_opt, f_windw, del_t)
-    toc_direct = time.time()
-    bt_direct = toc_direct-tic_direct
-    if verbose_:
-        print('Time taken to build model using direct method: ', bt_direct)
+# Define a function which builts and solves the function, returning time for bult, time for solve, and the solved model according to the type of built_function put as argument
+def build_and_solve(data_for_opt, built_function, solver, verbose_=False, model_name=''):
 
-    bm_direct = process.memory_info().rss # Unit in bytes
-    tic_ul = time.time()
-    A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
-    model_ul = build_model_ul(A_poly, b_poly, f_windw, del_t)
-    toc_ul = time.time()
-    bt_ul = toc_ul-tic_ul
-    if verbose_:
-        print('Time taken to build model using ul method: ', bt_ul)
+    #Building
+    tracemalloc.start()
+    tic_build = time.time()
+    model = built_function(data_for_opt)
+    toc_build = time.time()
+    solver_info = solver.solve(model, tee=False)
+    toc_solve = time.time()
 
-    solver = pyo.SolverFactory('gurobi')
-    bm_direct_end = process.memory_info().rss # Unit in bytes
-    if verbose_:
-        print('Memory used by direct method: ', bm_direct_end-bm_direct)
+    t_built = toc_build-tic_build
+    t_solve = toc_solve-toc_build
     
-    tic_solve_direct = time.time()
-    res_direct = solver.solve(model_direct, tee=False)
-    toc_solve_direct = time.time()
-    st_direct = toc_solve_direct-tic_solve_direct
+    _ , memory_peak = tracemalloc.get_traced_memory()
     if verbose_:
-        print('Time taken to solve model using direct method: ', st_direct)
+        print(f'Build time for {model_name}: {t_built} seconds')
+        print(f'Solve time for {model_name}: {t_solve} seconds')
 
-    tic_solve_ul = time.time()
-    res_ul = solver.solve(model_ul, tee=False)
-    bm_ul_end = process.memory_info().rss # Unit in bytes   
-    toc_solve_ul = time.time()
-    st_ul = toc_solve_ul-tic_solve_ul
-    if verbose_:
-        print('Time taken to solve model using ul method: ', st_ul)
-        print('Memory used by ul method: ', bm_ul_end-bm_direct_end)
+    tracemalloc.stop()
+    return t_built, t_solve, memory_peak, model, solver_info
 
-    if verbose_:
-        print('Objective value for direct method: ', model_direct.obj())
-        print('Objective value for ul method: ', model_ul.obj())
-        print(f'Speed up in build time (%): {(bt_direct-bt_ul)/(bt_direct)*100}')
-        print(f'Speed up in solve time (%): {(st_direct-st_ul)/(st_direct)*100}')
-        print(f'Total speed up (%): {(bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100}')
-
-
-
+def single_run(data_for_opt, f_windw, del_t, verbose_=False):
+    solver = pyo.SolverFactory('gurobi')
+    A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
+    data_for_opt_direct = [data_for_opt, f_windw, del_t]
+    data_for_opt_ul = [A_poly, b_poly, f_windw, del_t, del_t]
+    ##################### Direct method #####################
+    t_built_direct, t_solve_direct, memory_direct, model_direct, res_direct = build_and_solve(data_for_opt_direct, build_model_direct, solver, verbose_=verbose_, model_name='direct method')
+    
+    ###################### UL method #######################
+    t_built_ul, t_solve_ul, memory_ul, model_ul, res_ul = build_and_solve(data_for_opt_ul, build_model_ul, solver, verbose_=verbose_, model_name='ul method')
 
 
     res_dict = {'No of EVs': len(data_for_opt),
                 'No of time steps': int((1/del_t)*(f_windw[1] - f_windw[0])),
                 'Time step size (H)': del_t,
-                'Direct optimization': {'Build time (s)': bt_direct,
-                                        'Solve time (s)': st_direct,
+                'Direct optimization': {'Build time (s)': t_built_direct,
+                                        'Solve time (s)': t_solve_direct,
                                         'Objective value': model_direct.obj(),
                                         'info': res_direct},
-                'UL optimization': {'Build time (s)': bt_ul,
-                                    'Solve time (s)': st_ul,
+                'UL optimization': {'Build time (s)': t_built_ul,
+                                    'Solve time (s)': t_solve_ul,
                                     'Objective value': model_ul.obj(),
                                     'info': res_ul},
-                'Speed up in build time (%)': (bt_direct-bt_ul)/(bt_direct)*100,
-                'Speed up in solve time (%)': (st_direct-st_ul)/(st_direct)*100,
-                'Total speed up (%)': (bt_direct*st_direct-bt_ul*st_ul)/(bt_direct*st_direct)*100,
-                'Memory used by direct method (bytes)': bm_direct_end-bm_direct,
-                'Memory used by ul method (bytes)': bm_ul_end-bm_direct_end,
-                'Memory saved by ul method compared to direct (bytes)': bm_direct-bm_ul_end }
+                'Memory used by direct method (bytes)': memory_direct,
+                'Memory used by ul method (bytes)':memory_ul}
     
     return res_dict
 

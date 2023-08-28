@@ -66,43 +66,87 @@ p_feasible = [10,5,10]
 p_infeasible = [2,22,1]
 
 plot_feasibility_test(u,l,p_feasible,p_infeasible,save_path='figures/graphical_test.png')
-#%% [markdown]
-'''
-######################## Time comparison analysis ##################################
-'''
+
+#%% [markdown] # Time and Memory performance analysis 
+#[markdown]  ## Constant time step size 
 re_run = False
 if re_run:
     ev_data_all = pd.read_pickle(config.ev_data_all)
-    date_sample = dt.datetime(2022, 5, 1)
+    date_sample = dt.datetime(2020, 6, 1)
     verbose_ = 0
     f_windw = [18,19] # in hours
-    n_days = range(1,50)
+#     n_days = [1,50,250, 500, 750, 1000]
+#     re_list = []
+#     for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
+#         data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
+#         for ts in tq.tqdm([1/4], position=0,leave=True, desc='Time step size'):
+#             res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
+#             re_list.append(res_dict)
+
+#     time_analysis_df = pd.DataFrame(re_list)
+#     time_analysis_df.to_pickle('time_comparison_single_ts.pkl')
+#  ## Constant time step size 
+
+    f_windw = [18,19] # in hours
+    n_days = [1000]
     re_list = []
     for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
         data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
-        for ts in tq.tqdm([1,1/2, 1/3,1/4,1/5,1/6,1/7,1/8,1/9,1/10], position=0,leave=True, desc='Time step size'):
+        for ts in tq.tqdm([1,1/2,1/4, 1/8, 1/16, 1/32, 1/64,1/96], position=0,leave=True, desc='Time step size'):
             res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
             re_list.append(res_dict)
 
     time_analysis_df = pd.DataFrame(re_list)
-    time_analysis_df.to_pickle('time_comparison_10_ts.pkl')
-else:
-    time_analysis_df = pd.read_pickle('time_comparison_10_ts.pkl')
+    time_analysis_df.to_pickle('time_comparison_multi_ts.pkl')
+
 # %%
 ''' ######################### Plotting time analysis ############################# 
 '''
+plt.rcParams.update({'font.size': 10})
+############   Plotting for different time steps & number of EVs #################
+# time_analysis_df1 = pd.read_pickle('time_comparison_2.pkl')
+time_analysis_df2 = pd.read_pickle('time_comparison_single_ts.pkl')
+cl_scheme = ['#f7f4f9','#e7e1ef','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#980043','#67001f'][::-1]
+
 # drop rows with value more than 100
+fig, ax = plt.subplots(1,3,figsize=(6.8,4), sharey=False)
+# color = list of 10 colors
+
+n_t_steps = np.array([  1,  20,    58,    96, 115,   172])
+i = 0
+# for n_t in n_t_steps:
+#     df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
+#     t_solve_direct = [df.iloc[i]['Direct optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
+#     t_solve_ul = [df.iloc[i]['UL optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
+#     ax[0].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle=':', color=cl_scheme[i])
+#     ax[0].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i])    
+#     i += 1
+ax[0].set_yscale('log')
+custom_line = [plt.Line2D([0], [0], color=cl_scheme[i], lw=1.5) for i in range(len(n_t_steps))]
+ax[0].legend(custom_line, n_t_steps, ncol=2, fontsize=7, loc='upper left', title='No of time steps')
+ax[0].set_ylabel('Time (s)')
+ax[0].set_xticks([0,5000,10000,15000], labels=['0','5','10','15'])
+
+ax[0].grid(True, which='both', axis='both', linewidth=0.2)
+
+##################
 
 
-n_t_steps = time_analysis_df['No of time steps'].unique()
-for n_t in n_t_steps:
-    df = time_analysis_df[time_analysis_df['No of time steps'] == n_t]
-    plt.plot(df['No of EVs'],df['Speed up in solve time (%)'], '-*',label=f'{n_t} time steps')
+t_solve_direct2 = [time_analysis_df2.iloc[i]['Direct optimization']['info']['Solver'][0]['Time'] for i in range(len(time_analysis_df2))]
+t_solve_ul2 = [time_analysis_df2.iloc[i]['UL optimization']['info']['Solver'][0]['Time'] for i in range(len(time_analysis_df2))]
+ax[1].plot(time_analysis_df2['No of EVs'],t_solve_direct2,label=f'Direct optimization', linestyle='--', color=cl_scheme[0], marker='*',markersize=8)
+ax[1].plot(time_analysis_df2['No of EVs'],t_solve_ul2,label=f'UL optimization', linestyle='-', color=cl_scheme[0],marker='*',markersize=8)
+ax[1].set_yscale('log')
+ax[1].set_xlabel('Number of EVs')
+ax[1].set_xticks([0,25000,50000,75000, 100000, 125000], labels=['0','25','50','75', '100', '125'])
+ax[1].grid(True, which='both', axis='both', linewidth=0.2)
+plt.tight_layout()
 
-plt.xlabel('Number of EVs')
-plt.ylabel('Speed up in solve time (%)')
-plt.legend()
 
+#######
+ax[2].plot(time_analysis_df2['No of EVs'],time_analysis_df2['Memory used by direct method (bytes)']/1024/1024/1024,color=cl_scheme[0], linestyle='--', marker='*',markersize=8)
+ax[2].plot(time_analysis_df2['No of EVs'],time_analysis_df2['Memory used by ul method (bytes)'],color=cl_scheme[0], linestyle='-', marker='*',markersize=8)
+# ax[2].set_yscale('log')
 
 # %%
 
@@ -110,7 +154,7 @@ plt.legend()
 
 
 plt.figure()
-for n_t in [1,5,10]:
+for n_t in [3]:
     df = time_analysis_df[time_analysis_df['No of time steps'] == n_t]
     plt.scatter(df['No of EVs'],df['Memory saved by ul method compared to direct (bytes)'],label=f'{n_t}')
 plt.legend(ncol=5)
