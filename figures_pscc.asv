@@ -32,7 +32,6 @@ fill3(x(kxz), n(1)*ones(length(kxz)),z(kxz),shade_color, FaceAlpha=a_p,EdgeColor
 fill3(x(kyx), y(kyx),n(1)*ones(length(kyx)),shade_color, FaceAlpha=a_p,EdgeColor='k')
 fill3(n(1)*ones(length(kyz)),y(kyz), z(kyz),shade_color, FaceAlpha=a_p,EdgeColor="k")
 title('EV 1')
-grid("on")
 
 % Second plot
 ax2 = nexttile;
@@ -44,7 +43,8 @@ fill3(x(kxz), n(2)*ones(length(kxz)),z(kxz),shade_color, FaceAlpha=a_p,EdgeColor
 fill3(x(kyx), y(kyx),n(2)*ones(length(kyx)),shade_color, FaceAlpha=a_p,EdgeColor="k")
 fill3(n(2)*ones(length(kyz)),y(kyz), z(kyz),shade_color, FaceAlpha=a_p,EdgeColor="k")
 title('EV 1')
-grid("on")
+xlabel(kW (t=1))
+
 
 % Third
 ax3 = nexttile;
@@ -56,7 +56,7 @@ fill3(x(kxz), n(3)*ones(length(kxz)),z(kxz),shade_color, FaceAlpha=a_p,EdgeColor
 fill3(x(kyx), y(kyx),n(3)*ones(length(kyx)),shade_color, FaceAlpha=a_p,EdgeColor="k")
 fill3(n(3)*ones(length(kyz)),y(kyz), z(kyz),shade_color, FaceAlpha=a_p,EdgeColor="k")
 title('EV 1 \oplus EV 2')
-grid("on")
+
 
 % linkaxes([ax1 ax2],'xyz');
 

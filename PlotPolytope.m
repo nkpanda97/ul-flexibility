@@ -1,4 +1,4 @@
-function PlotPolytope(A,B, step_size, fc, ec, alpha, alpha_ec, tf_bool)
+function [k1,x,y,z] = PlotPolytope(A,B, step_size, fc, ec, alpha, alpha_ec, tf_bool);
     %define the range of x,y,z coordinates
     x1=-100:step_size:100;
     y1=-100:step_size:100;
@@ -18,4 +18,5 @@ function PlotPolytope(A,B, step_size, fc, ec, alpha, alpha_ec, tf_bool)
     trisurf(k1,x,y,z, 'FaceColor',fc, 'EdgeColor', ec, 'FaceAlpha',alpha, 'EdgeAlpha', alpha_ec)
     axis equal
     hold on
+
 end

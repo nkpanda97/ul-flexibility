@@ -75,24 +75,11 @@ if re_run:
     date_sample = dt.datetime(2020, 6, 1)
     verbose_ = 0
     f_windw = [18,19] # in hours
-#     n_days = [1,50,250, 500, 750, 1000]
-#     re_list = []
-#     for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
-#         data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
-#         for ts in tq.tqdm([1/4], position=0,leave=True, desc='Time step size'):
-#             res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
-#             re_list.append(res_dict)
-
-#     time_analysis_df = pd.DataFrame(re_list)
-#     time_analysis_df.to_pickle('time_comparison_single_ts.pkl')
-#  ## Constant time step size 
-
-    f_windw = [18,19] # in hours
-    n_days = [1000]
+    n_days = [1,50,250, 500, 750, 1000]
     re_list = []
     for n_times in tq.tqdm(n_days, position=0,leave=True,desc='Days of transactions'):
         data_for_opt = multiply_transactions(ev_data_all, n_times,date_sample,del_t=1, f_windw=f_windw, verbose_=verbose_ , restrict_stop_time=False, total_time_steps=36)
-        for ts in tq.tqdm([1,1/2,1/4, 1/8, 1/16, 1/32, 1/64,1/96], position=0,leave=True, desc='Time step size'):
+        for ts in tq.tqdm([1,1/2,1/4, 1/16], position=0,leave=True, desc='Time step size'):
             res_dict = single_run(data_for_opt, f_windw, del_t=ts, verbose_=verbose_)
             re_list.append(res_dict)
 
@@ -104,57 +91,75 @@ if re_run:
 '''
 plt.rcParams.update({'font.size': 10})
 ############   Plotting for different time steps & number of EVs #################
-# time_analysis_df1 = pd.read_pickle('time_comparison_2.pkl')
+time_analysis_df1 = pd.read_pickle('time_comparison_multi_ts.pkl')
 time_analysis_df2 = pd.read_pickle('time_comparison_single_ts.pkl')
-cl_scheme = ['#f7f4f9','#e7e1ef','#d4b9da','#c994c7','#df65b0','#e7298a','#ce1256','#980043','#67001f'][::-1]
+cl_scheme = ['#feebe2','#fbb4b9','#f768a1','#ae017e']
 
-# drop rows with value more than 100
-fig, ax = plt.subplots(1,3,figsize=(6.8,4), sharey=False)
+fig1,ax = plt.subplots(1,2, figsize=(4.4,4), sharey=True, sharex=True)
+
 # color = list of 10 colors
 
-n_t_steps = np.array([  1,  20,    58,    96, 115,   172])
+n_t_steps = np.array([  1,  2, 4, 16])
 i = 0
-# for n_t in n_t_steps:
-#     df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
-#     t_solve_direct = [df.iloc[i]['Direct optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
-#     t_solve_ul = [df.iloc[i]['UL optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
-#     ax[0].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle=':', color=cl_scheme[i])
-#     ax[0].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i])    
-#     i += 1
+for n_t in n_t_steps:
+    df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
+    # t_solve_direct = [df.iloc[i]['Direct optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
+    # t_solve_ul = [df.iloc[i]['UL optimization']['info']['Solver'][0]['Time'] for i in range(len(df))]
+
+    t_built_direct = [df['Direct optimization'].iloc[i]['Build time (s)'] for i in range(len(df))]
+    t_built_ul = [df['UL optimization'].iloc[i]['Build time (s)'] for i in range(len(df))]
+
+    t_solve_direct = [df['Direct optimization'].iloc[i]['Solve time (s)'] for i in range(len(df))]
+    t_solve_ul = [df['UL optimization'].iloc[i]['Solve time (s)'] for i in range(len(df))]
+
+
+
+    ax[0].plot(df['No of EVs'],t_built_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i])
+    ax[0].plot(df['No of EVs'],t_built_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i])
+
+    ax[1].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i])
+    ax[1].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i])    
+
+    
+    
+    i += 1
 ax[0].set_yscale('log')
-custom_line = [plt.Line2D([0], [0], color=cl_scheme[i], lw=1.5) for i in range(len(n_t_steps))]
-ax[0].legend(custom_line, n_t_steps, ncol=2, fontsize=7, loc='upper left', title='No of time steps')
+ax[1].set_yscale('log')
+
+
+ax[0].set_ylim([1e-3,3e3])
+ax[1].set_ylim([1e-3,3e3])
 ax[0].set_ylabel('Time (s)')
-ax[0].set_xticks([0,5000,10000,15000], labels=['0','5','10','15'])
+
+
+ax[0].set_xticks([0,75000, 150000,225000], labels=['0','75','150', '225'], rotation=-30)
+ax[1].set_xticks([0,75000, 150000,225000], labels=['0','75','150', '225'], rotation=-30)
 
 ax[0].grid(True, which='both', axis='both', linewidth=0.2)
-
-##################
-
-
-t_solve_direct2 = [time_analysis_df2.iloc[i]['Direct optimization']['info']['Solver'][0]['Time'] for i in range(len(time_analysis_df2))]
-t_solve_ul2 = [time_analysis_df2.iloc[i]['UL optimization']['info']['Solver'][0]['Time'] for i in range(len(time_analysis_df2))]
-ax[1].plot(time_analysis_df2['No of EVs'],t_solve_direct2,label=f'Direct optimization', linestyle='--', color=cl_scheme[0], marker='*',markersize=8)
-ax[1].plot(time_analysis_df2['No of EVs'],t_solve_ul2,label=f'UL optimization', linestyle='-', color=cl_scheme[0],marker='*',markersize=8)
-ax[1].set_yscale('log')
-ax[1].set_xlabel('Number of EVs')
-ax[1].set_xticks([0,25000,50000,75000, 100000, 125000], labels=['0','25','50','75', '100', '125'])
 ax[1].grid(True, which='both', axis='both', linewidth=0.2)
-plt.tight_layout()
 
+ax[0].set_title('Built time')
+ax[1].set_title('Solve time')
 
-#######
-ax[2].plot(time_analysis_df2['No of EVs'],time_analysis_df2['Memory used by direct method (bytes)']/1024/1024/1024,color=cl_scheme[0], linestyle='--', marker='*',markersize=8)
-ax[2].plot(time_analysis_df2['No of EVs'],time_analysis_df2['Memory used by ul method (bytes)'],color=cl_scheme[0], linestyle='-', marker='*',markersize=8)
-# ax[2].set_yscale('log')
+# common xlabel
+fig1.text(0.5, 0.0, 'Number of EVs (in thousands)', ha='center', va='center')
 
-# %%
+plt.subplots_adjust(wspace=0.05, hspace=0)
+# custom_line = [plt.Line2D([0], [0], color=cl_scheme[i], lw=1.5) for i in range(len(n_t_steps))]
+# ax[0].legend(custom_line, n_t_steps, ncol=2, fontsize=7, loc='upper left', title='No of time steps')
 
-# Plot memory saved
-
-
-plt.figure()
-for n_t in [3]:
-    df = time_analysis_df[time_analysis_df['No of time steps'] == n_t]
-    plt.scatter(df['No of EVs'],df['Memory saved by ul method compared to direct (bytes)'],label=f'{n_t}')
-plt.legend(ncol=5)
+_, ax = plt.subplots(1,1, figsize=(2.2,4), sharey=True)
+i = 0
+for n_t in n_t_steps:
+    df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
+    memory_direc_mb = df['Memory used by direct method (bytes)']/1e6
+    memory_ul_mb = df['Memory used by ul method (bytes)']/1e6
+    ax.plot(df['No of EVs'],memory_direc_mb,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i])
+    ax.plot(df['No of EVs'],memory_ul_mb,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i])
+    i += 1
+ax.set_xticks([0,75000, 150000,225000], labels=['0','75','150', '225'], rotation=-30)
+ax.set_yscale('log')
+ax.set_ylabel('Memory (MB)')
+ax.set_title('Peak Memory usage')
+ax.set_xlabel('Number of EVs (in thousands)')
+ax.grid(True, which='both', axis='both', linewidth=0.2)
