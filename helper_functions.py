@@ -36,6 +36,36 @@ solver.solve(model_ul, tee=False)
 print(model_direct.obj())
 print(model_ul.obj())
 '''
+def update_fonts_for_fig(col=2, **kwargs):
+    if len(kwargs.keys())>0:
+        print("Updating fonts with kwargs")
+        SMALL_SIZE = kwargs['SMALL_SIZE']
+        MEDIUM_SIZE = kwargs['MEDIUM_SIZE']
+        BIGGER_SIZE = kwargs['BIGGER_SIZE']
+    else:
+        if col==2:
+            SMALL_SIZE = 7
+            MEDIUM_SIZE = 8
+            BIGGER_SIZE = 9
+
+           
+        elif col==1:
+            # Plotting Global Settings
+            SMALL_SIZE = 6
+            MEDIUM_SIZE = 7
+            BIGGER_SIZE = 8
+
+                
+        else:
+            print("Wrong column number")
+
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=BIGGER_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 def display_matrix(a):
     text = r'$\left[\begin{array}{*{'
     text += str(len(a[0]))
@@ -50,7 +80,7 @@ def display_matrix(a):
         text += '\n'
     text += r'\end{array}\right]$'
     print(text)
-    
+
 def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=None):
     ''' This function plots the feasibility test for the given upper and lower limits of a EV for a provided feasible and infeasible power profile. C.F. Lemma 1 (Ordered UL repreentation) in the paper.
     param u: upper limit of the EV
@@ -62,16 +92,16 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
     return: None
     '''
     t_steps = len(u)
-    plt.rcParams.update({'font.size': 20})
-    fig, ax = plt.subplots(1,2,figsize=fsize, sharey=True)
-    plt.subplots_adjust(wspace=0.05)
 
-    ax[0].plot(np.arange(t_steps),u, marker='o', label=r'$\vec{u}$', color='red',linewidth=2) # UPPER LIMIT
-    ax[0].plot(np.arange(t_steps),l, marker='o', label=r'$\vec{l}$', color='red', linestyle='--',linewidth=2) # LOWER LIMIT
+    fig, ax = plt.subplots(1,2,figsize=fsize, sharey=True)
+    plt.subplots_adjust(wspace=0.1)
+
+    ax[0].plot(np.arange(t_steps),u, marker='o',markersize=3, label=r'$\vec{u}$', color='red',linewidth=0.5) # UPPER LIMIT
+    ax[0].plot(np.arange(t_steps),l, marker='o',markersize=3, label=r'$\vec{l}$', color='red', linestyle='--',linewidth=0.5) # LOWER LIMIT
     p_up = [0] + list(np.cumsum(np.sort(p_feasible)[::-1]))  # sort decending Integral of descending
     p_low = [0] + list(np.cumsum(np.sort(p_feasible)) ) # sort ascending  INTEGRAL OF ASCENDING
-    ax[0].plot(np.arange(t_steps),p_up, marker='o', label=r'$\sum_k$ descending $(\vec{p}_k)$', color='blue',linewidth=2)
-    ax[0].plot(np.arange(t_steps),p_low, marker='o', label=r'$\sum_k$ ascending $(\vec{p}_k)$', color='blue', linestyle='--',linewidth=2)
+    ax[0].plot(np.arange(t_steps),p_up, marker='o', markersize=3,label=r'$\sum_k$ descending $(\vec{p}_k)$', color='blue',linewidth=0.5)
+    ax[0].plot(np.arange(t_steps),p_low, marker='o', markersize=3,label=r'$\sum_k$ ascending $(\vec{p}_k)$', color='blue', linestyle='--',linewidth=0.5)
     ax[0].set_xticks(np.arange(t_steps))
     ax[0].set_xlabel('time intervals ($k$)')
     ax[0].set_ylabel('Energy (kWh)')
@@ -79,12 +109,12 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
     ax[0].grid(linewidth=0.5 )
 
 
-    ax[1].plot(np.arange(t_steps),u, marker='o', label=r'$\vec{u}$', color='red',linewidth=2)
-    ax[1].plot(np.arange(t_steps),l, marker='o', label=r'$\vec{l}$', color='red', linestyle='--',linewidth=2)
+    ax[1].plot(np.arange(t_steps),u, marker='o',markersize=3, label=r'$\vec{u}$', color='red',linewidth=0.5)
+    ax[1].plot(np.arange(t_steps),l, marker='o',markersize=3, label=r'$\vec{l}$', color='red', linestyle='--',linewidth=0.5)
     p_up = [0] +list(np.cumsum(np.sort(p_infeasible)[::-1]))  # sort decending
     p_low =[0] + list(np.cumsum(np.sort(p_infeasible)))  # sort ascending
-    ax[1].plot(np.arange(t_steps),p_up, marker='o', label=r'descending $\vec{p}$', color='blue',linewidth=2)
-    ax[1].plot(np.arange(t_steps),p_low, marker='o', label=r'ascending $\vec{p}$', color='blue', linestyle='--',linewidth=2)
+    ax[1].plot(np.arange(t_steps),p_up, marker='o',markersize=3, label=r'descending $\vec{p}$', color='blue',linewidth=0.5)
+    ax[1].plot(np.arange(t_steps),p_low, marker='o',markersize=3, label=r'ascending $\vec{p}$', color='blue', linestyle='--',linewidth=0.5)
     ax[1].set_xticks(np.arange(t_steps))
     ax[1].set_xlabel('time intervals ($k$)')
     # ax[1].text(0.75, 0.08,r'$\vec{p}$='+str(p_infeasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[1].transAxes)
@@ -102,27 +132,31 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
                 arrowprops=dict(facecolor='black', shrink=0.05),
                 )
     for i in inf_index_up[0]:
-        ax[1].annotate('Infeasible', xy=(i, p_up[i]), xytext=(i+0.5, p_up[i]-2),
-                arrowprops=dict(facecolor='black', shrink=0.04, width=1, headwidth=6),
+        ax[1].annotate('Infeasible', xy=(i, p_up[i]), xytext=(i+0.8, p_up[i]-2),
+                arrowprops=dict( arrowstyle='-'),
                 )
-        ax[1].scatter(i, p_up[i], marker='*', color='m', s=330, zorder=10)
+        ax[1].scatter(i, p_up[i], marker='o',facecolors='none', edgecolors='k', color='k', s=50, zorder=10)
 
     #make a single legend for the figure
     handles, labels = ax[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=4)
+    # fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=4)
 
-    plt.rcParams.update({'font.size': 12})
-    a = plt.axes([.145, .77, .12, .1])
-    plt.step(np.arange(t_steps+1),[0]+list(p_feasible) + [p_feasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=2)
+   
+    a = plt.axes([.136, .79, .12, .08])
+    plt.step(np.arange(t_steps+1),[0]+list(p_feasible) + [p_feasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
     # plt.text(0.245, 0.88,r'$\vec{p}$='+str(p_feasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[0].transAxes)
-    plt.xticks(np.arange(t_steps))
+    plt.xticks(np.arange(t_steps), fontsize=5)
+    plt.yticks([5],fontsize=5)
+    plt.tick_params(axis='y',direction='in', pad=-10)
     # y-grid only
-    plt.grid(axis='y', linestyle='--', linewidth=1)
+    plt.grid(axis='y', linestyle='--', linewidth=0.5)
 
-    b = plt.axes([.54, .77, .12, .1])
-    plt.step(np.arange(t_steps+1),[0]+list(p_infeasible) + [p_infeasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=2)
-    plt.xticks(np.arange(t_steps))
-    plt.grid(axis='y', linestyle='--', linewidth=1)
+    b = plt.axes([.54, .79, .12, .08])
+    plt.step(np.arange(t_steps+1),[0]+list(p_infeasible) + [p_infeasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
+    plt.xticks(np.arange(t_steps), fontsize=5)
+    plt.yticks([10,20],fontsize=5)
+    plt.tick_params(axis='y',direction='in', pad=-10)
+    plt.grid(axis='y', linestyle='--', linewidth=0.5)
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
     
