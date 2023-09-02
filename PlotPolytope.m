@@ -57,10 +57,10 @@ function PlotPolytope(A,B, step_size, fc, alpha, edge_color,edge_width, projecti
     title(fig_title,'Interpreter','latex')
     grid("on")
     view([-45.5608129184808 14.4])
-
-    xlabel('$p_1$ (kW)','Interpreter','latex', Rotation=20)
-    ylabel('$p_2$ (kW)','Interpreter','latex', Rotation=-20)
-    zlabel('$p_3$ (kW)','Interpreter','latex')
+% 
+%     xlabel('$p_1$ (kW)','Interpreter','latex',Rotation=10,VerticalAlignment='top',HorizontalAlignment='center')
+%     ylabel('$p_2$ (kW)','Interpreter','latex',Rotation=-10,VerticalAlignment='top',HorizontalAlignment='right')
+%     zlabel('$p_3$ (kW)','Interpreter','latex')
 
     hold off
     
