@@ -58,6 +58,7 @@ display_matrix(b_poly2)
 # Saving A, B as  .mat file for plotting
 savemat('polytope_matrix.mat', {'A':A_poly, 'B1':b_poly1, 'B2':b_poly2})
 print(f'System matrix saved as polytope_matrix.mat')
+
 #%% [markdown]
 '''
 ####################################### Graphical feasibility check ##############################################
@@ -67,10 +68,10 @@ u, l = calculate_u_l(p_max=20, p_min=0, e_min = 15, e_max=25, del_t=1, t_steps=3
 p_feasible = [10,5,10]
 p_infeasible = [2,22,1]
     
-
-
+import matplotlib as mpl
+mpl.rcParams['axes.linewidth'] = 0.5
 update_fonts_for_fig(1)
-plot_feasibility_test(u,l,p_feasible,p_infeasible,fsize=(3.4,3),save_path='figures/graphical_test.png')
+plot_feasibility_test(u,l,p_feasible,p_infeasible,fsize=(4,3),save_path='figures/graphical_test.pdf')
 
 #%% [markdown] # Time and Memory performance analysis 
 #[markdown]  ## Constant time step size 
@@ -123,11 +124,11 @@ for n_t in n_t_steps:
 
 
 
-    ax[0].plot(df['No of EVs'],t_built_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8)
-    ax[0].plot(df['No of EVs'],t_built_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8)
+    ax[0].plot(df['No of EVs'],t_built_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
+    ax[0].plot(df['No of EVs'],t_built_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
 
-    ax[1].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8)
-    ax[1].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8)    
+    ax[1].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
+    ax[1].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)    
 
     
     
@@ -162,8 +163,8 @@ for n_t in n_t_steps:
     df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
     memory_direc_mb = df['Memory used by direct method (bytes)']/1e6
     memory_ul_mb = df['Memory used by ul method (bytes)']/1e6
-    ax[2].plot(df['No of EVs'],memory_direc_mb,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8)
-    ax[2].plot(df['No of EVs'],memory_ul_mb,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8)
+    ax[2].plot(df['No of EVs'],memory_direc_mb,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
+    ax[2].plot(df['No of EVs'],memory_ul_mb,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
     i += 1
 ax[2].set_yscale('log')
 ax[2].set_ylabel('Memory (MB)', fontsize=9, labelpad=-5) # control the horizontal spacing

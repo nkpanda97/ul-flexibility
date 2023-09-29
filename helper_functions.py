@@ -142,19 +142,21 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
     # fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=4)
 
    
-    a = plt.axes([.136, .79, .12, .08])
-    plt.step(np.arange(t_steps+1),[0]+list(p_feasible) + [p_feasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
+    a = plt.axes([.136, .77, .12, .1])
+    plt.step(np.arange(1,t_steps),list(p_feasible), label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
     # plt.text(0.245, 0.88,r'$\vec{p}$='+str(p_feasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[0].transAxes)
-    plt.xticks(np.arange(t_steps), fontsize=5)
-    plt.yticks([5],fontsize=5)
+    plt.xticks(np.arange(1,t_steps), fontsize=5)
+    plt.yticks([0,5,10],fontsize=5)
+    plt.ylim([-2, 12])
     plt.tick_params(axis='y',direction='in', pad=-10)
     # y-grid only
     plt.grid(axis='y', linestyle='--', linewidth=0.5)
 
-    b = plt.axes([.54, .79, .12, .08])
-    plt.step(np.arange(t_steps+1),[0]+list(p_infeasible) + [p_infeasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
-    plt.xticks(np.arange(t_steps), fontsize=5)
-    plt.yticks([10,20],fontsize=5)
+    b = plt.axes([.54, .77, .1, .1])
+    plt.step(np.arange(1,t_steps),list(p_infeasible) , label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
+    plt.xticks(np.arange(1,t_steps), fontsize=5)
+    plt.yticks([0,10,20],fontsize=5)
+    plt.ylim([-5, 25])
     plt.tick_params(axis='y',direction='in', pad=-10)
     plt.grid(axis='y', linestyle='--', linewidth=0.5)
     if save_path is not None:
