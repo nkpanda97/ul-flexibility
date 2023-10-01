@@ -80,7 +80,6 @@ def display_matrix(a):
         text += '\n'
     text += r'\end{array}\right]$'
     print(text)
-
 def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=None):
     ''' This function plots the feasibility test for the given upper and lower limits of a EV for a provided feasible and infeasible power profile. C.F. Lemma 1 (Ordered UL repreentation) in the paper.
     param u: upper limit of the EV
@@ -142,22 +141,22 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
     # fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98), ncol=4)
 
    
-    a = plt.axes([.136, .77, .12, .1])
-    plt.step(np.arange(1,t_steps),list(p_feasible), label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
+    a = plt.axes([.165, .77, .07, .1])
+    plt.step(np.arange(1,t_steps+1),list(p_feasible)+[p_feasible[-1]], label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
     # plt.text(0.245, 0.88,r'$\vec{p}$='+str(p_feasible)+ ' kW', horizontalalignment='center', verticalalignment='center', transform=ax[0].transAxes)
-    plt.xticks(np.arange(1,t_steps), fontsize=5)
+    plt.xticks([], fontsize=5, labels='')
     plt.yticks([0,5,10],fontsize=5)
     plt.ylim([-2, 12])
-    plt.tick_params(axis='y',direction='in', pad=-10)
+    plt.tick_params(axis='y',direction='out', pad=0)
     # y-grid only
     plt.grid(axis='y', linestyle='--', linewidth=0.5)
 
-    b = plt.axes([.54, .77, .1, .1])
-    plt.step(np.arange(1,t_steps),list(p_infeasible) , label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
-    plt.xticks(np.arange(1,t_steps), fontsize=5)
+    b = plt.axes([.57, .77, .07, .1])
+    plt.step(np.arange(1,t_steps+1),list(p_infeasible)+[p_infeasible[-1]] , label=r'Feasible $\vec{p}$', color='green',where='post', linewidth=0.5)
+    plt.xticks([], fontsize=5, labels='')
     plt.yticks([0,10,20],fontsize=5)
     plt.ylim([-5, 25])
-    plt.tick_params(axis='y',direction='in', pad=-10)
+    plt.tick_params(axis='y',direction='out', pad=0)
     plt.grid(axis='y', linestyle='--', linewidth=0.5)
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
