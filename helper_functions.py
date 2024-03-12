@@ -5,10 +5,9 @@ This file contains all functions which are necessary for the project.
 @FileName: helper_functions.py
 @Git ：https://github.com/nkpanda97
 """
-#%%
+
 import numpy as np
 import pandas as pd
-import config
 import matplotlib.pyplot as plt
 import datetime as dt
 # Supress all warnings
@@ -23,20 +22,13 @@ import tracemalloc
 
 process = psutil.Process(os.getpid())
 
-# %%
-'''
-test_data = pd.DataFrame(data={'P_MAX': [20,10], 'P_MIN':[0,5], 'E_MAX':[25, 30], 'E_MIN':[15,20]})
-model_direct = build_model_direct(test_data, [0,3], 1)
-A_poly, b_poly = generate_system_matrix(test_data, [0,3], 1)
-model_ul = build_model_ul(A_poly, b_poly, [0,3])
-solver = pyo.SolverFactory('gurobi')
-solver.options['DualReductions'] = 0
-solver.solve(model_direct, tee=True)
-solver.solve(model_ul, tee=False)
-print(model_direct.obj())
-print(model_ul.obj())
-'''
+
 def update_fonts_for_fig(col=2, **kwargs):
+    ''' This function updates the fonts for the figures. It takes the column number of the figure and the kwargs for the font sizes. If kwargs is not provided then it uses the default font sizes for the figures.
+    param col: The column number of the figure
+    param kwargs: The font sizes for the figure
+    return: None
+    '''
     if len(kwargs.keys())>0:
         print("Updating fonts with kwargs")
         SMALL_SIZE = kwargs['SMALL_SIZE']
@@ -66,7 +58,13 @@ def update_fonts_for_fig(col=2, **kwargs):
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 def display_matrix(a):
+    ''' This function displays the matrix in latex format
+    param a: The matrix to be displayed
+    return: None
+    '''
+
     text = r'$\left[\begin{array}{*{'
     text += str(len(a[0]))
     text += r'}c}'
@@ -80,6 +78,7 @@ def display_matrix(a):
         text += '\n'
     text += r'\end{array}\right]$'
     print(text)
+
 def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=None):
     ''' This function plots the feasibility test for the given upper and lower limits of a EV for a provided feasible and infeasible power profile. C.F. Lemma 1 (Ordered UL repreentation) in the paper.
     param u: upper limit of the EV
@@ -164,6 +163,16 @@ def plot_feasibility_test(u,l,p_feasible, p_infeasible, fsize=(20,10),save_path=
     return None
 
 def rescale_ev_data(ev_data, date_sample, del_t, restrict_stop_time=False, total_time_steps=36, verbose_=1000):
+    ''' This function rescales the ev data to the time steps of del_t hours and returns the connectivity_df and the ev_data after rescaling
+    param ev_data: The dataframe of ev transactions
+    param date_sample: The date for which the transactions are to be rescaled
+    param del_t: The time step for optimization
+    param restrict_stop_time: If True, then the stop time is restricted to the last time step
+    param total_time_steps: The total time steps in the optimization horizon
+    param verbose_: The verbosity level
+    return connectivity_df: The dataframe of the connectivity matrix
+    return ev_data: The dataframe of the ev transactions after rescaling
+    '''
     ev_data = ev_data[ev_data['START'].dt.date == date_sample.date()]
 
     if verbose_ >=500:
@@ -255,6 +264,11 @@ def process_for_opt(ev_df, f_windw, del_t, verbose_=1000):
     return df_for_opt
 
 def build_model_direct(data_for_opt):
+    """ This function builds the pyomo model for the direct optimization method
+    param data_for_opt: The data for optimization
+    return model: The pyomo model
+    """
+
     # Pyomo model
 
     df_for_opt = data_for_opt[0]
@@ -317,6 +331,16 @@ def build_model_direct(data_for_opt):
     return model
 
 def calculate_u_l(p_min, p_max, e_min, e_max, del_t, t_steps):
+    """ This function calculates the upper and lower limits for the EV
+    param p_min: Minimum charging power of the EV
+    param p_max: Maximum charging power of the EV
+    param e_min: Minimum charging energy of the EV
+    param e_max: Maximum charging energy of the EV
+    param del_t: The time step for optimization
+    param t_steps: The total time steps
+    return u: The upper limit
+    return l: The lower limit
+    """
     u = [0]
     l = [0]
     for n in range(1, t_steps+1):
@@ -325,6 +349,12 @@ def calculate_u_l(p_min, p_max, e_min, e_max, del_t, t_steps):
     return u, l
 
 def calculate_aggregate_ul(ev_data, f_windw, del_t):
+    """ This function calculates the aggregate upper and lower limits for the EVs
+    param ev_data: The dataframe of ev transactions
+    param f_windw: The flexibility window
+    param del_t: The time step for optimization
+    return ul_df: The dataframe of the aggregate upper and lower limits
+    """
 
     ul_dict = {}
 
@@ -339,6 +369,10 @@ def calculate_aggregate_ul(ev_data, f_windw, del_t):
     return ul_df
 
 def generate_combinations_matrix(n):
+    """ This function generates the combinations matrix
+    param n: The number of EVs
+    return matrix_total: The combinations matrix
+    """
     matrix_total = []
     for i in range(1, n+1):
         combinations_list = list(combinations(range(n), i))
@@ -353,22 +387,34 @@ def generate_combinations_matrix(n):
     return np.vstack(matrix_total)
 
 def generate_polytope_b_matrix(T):
-   mymatrix = []
-   for col in range(1,1+T):
-      c_m = []
-      for row in range(1,1+T):
-         if row == col:
-            c_m.append(np.ones(shape=(len(list(combinations(range(T), row))),1), dtype=int))
-         else:
-            c_m.append(np.zeros(shape=(len(list(combinations(range(T), row))),1), dtype=int))
+    """ This function generates the polytope b matrix
+    param T: The total time steps
+    return b_matrix: The polytope b matrix
+    """
+    mymatrix = []
+    for col in range(1,1+T):
+        c_m = []
+        for row in range(1,1+T):
+            if row == col:
+                c_m.append(np.ones(shape=(len(list(combinations(range(T), row))),1), dtype=int))
+            else:
+                c_m.append(np.zeros(shape=(len(list(combinations(range(T), row))),1), dtype=int))
 
-      single_col_matrix = np.vstack(c_m)
-   
-      mymatrix.append(single_col_matrix)
+        single_col_matrix = np.vstack(c_m)
+    
+        mymatrix.append(single_col_matrix)
 
-   return np.hstack(mymatrix)
+    return np.hstack(mymatrix)
 
 def generate_system_matrix(ev_data, f_windw, del_t):
+    """ This function generates the system matrix
+    param ev_data: The dataframe of ev transactions
+    param f_windw: The flexibility window
+    param del_t: The time step for optimization
+    return A_poly: The A matrix
+    return b_poly: The b matrix
+    """
+
     ul_aggregate = calculate_aggregate_ul(ev_data, f_windw, del_t)
     u = ul_aggregate['Aggregate u'].values
     l = ul_aggregate['Aggregate l'].values
@@ -380,7 +426,10 @@ def generate_system_matrix(ev_data, f_windw, del_t):
     return A_poly, b_poly
 
 def build_model_ul(data_for_opt):
-
+    """ This function builds the pyomo model for the ul optimization method
+    param data_for_opt: The data for optimization
+    return model: The pyomo model
+    """
     A = data_for_opt[0]
     b = data_for_opt[1]
     f_windw = data_for_opt[2]
@@ -420,6 +469,17 @@ def build_model_ul(data_for_opt):
     return model
 
 def multiply_transactions(ev_data_all, n_times,date_sample,del_t, f_windw, verbose_=False , restrict_stop_time=False, total_time_steps=36):
+    ''' This function multiplies the transactions for n_times and returns the data_for_opt for the optimization
+    param ev_data_all: The dataframe of ev transactions
+    param n_times: The number of times to multiply the transactions
+    param date_sample: The date for which the transactions are to be rescaled
+    param del_t: The time step for optimization
+    param f_windw: The flexibility window
+    param verbose_: The verbosity level
+    param restrict_stop_time: If True, then the stop time is restricted to the last time step
+    param total_time_steps: The total time steps in the optimization horizon
+    return data_for_opt: The data for optimization
+    '''
 
     if n_times >1:
         list_df_for_opt = []
@@ -438,6 +498,18 @@ def multiply_transactions(ev_data_all, n_times,date_sample,del_t, f_windw, verbo
 
 # Define a function which builts and solves the function, returning time for bult, time for solve, and the solved model according to the type of built_function put as argument
 def build_and_solve(data_for_opt, built_function, solver, verbose_=False, model_name=''):
+    ''' This function builds and solves the model and returns the time for build, time for solve, and the memory used
+    param data_for_opt: The data for optimization
+    param built_function: The function to build the model
+    param solver: The solver
+    param verbose_: The verbosity level
+    param model_name: The name of the model
+    return t_built: The time for build
+    return t_solve: The time for solve
+    return memory_peak: The memory used
+    return model: The model
+    return solver_info: The solver info
+    '''
 
     #Building
     tracemalloc.start()
@@ -459,6 +531,14 @@ def build_and_solve(data_for_opt, built_function, solver, verbose_=False, model_
     return t_built, t_solve, memory_peak, model, solver_info
 
 def single_run(data_for_opt, f_windw, del_t, verbose_=False):
+    ''' This function runs the single optimization run and returns the results
+    param data_for_opt: The data for optimization
+    param f_windw: The flexibility window
+    param del_t: The time step for optimization
+    param verbose_: The verbosity level
+    return res_dict: The results
+    '''
+
     solver = pyo.SolverFactory('gurobi')
     A_poly, b_poly = generate_system_matrix(data_for_opt, f_windw, del_t)
     data_for_opt_direct = [data_for_opt, f_windw, del_t]
@@ -487,5 +567,10 @@ def single_run(data_for_opt, f_windw, del_t, verbose_=False):
     return res_dict
 
 def log_model_info(model, file_name='log.txt'):
+    ''' This function logs the model info
+    param model: The model
+    param file_name: The file name
+    return: None
+    '''
     with open(file_name, 'w') as output_file:
             model.pprint(output_file)
