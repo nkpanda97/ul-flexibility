@@ -101,7 +101,7 @@ if re_run:
 time_analysis_df1 = pd.read_pickle('time_comparison_multi_ts.pkl')
 cl_scheme = ['#fe9929','#dd3497','#034e7b','#005a32']
 
-update_fonts_for_fig(1)
+update_fonts_for_fig(2)
 
 fig = plt.figure(figsize=(3.4,3))
 spec = gridspec.GridSpec(ncols=5, nrows=1, figure=fig,width_ratios=[1,0,1,0.8,2])
@@ -182,10 +182,10 @@ fig.text(0.5, -0.01, 'Number of EVs (in thousands)', ha='center', va='center', f
 plt.savefig('figures/memory_time_analysis_multi_ts.pdf', dpi=600, bbox_inches='tight')
 
 # %%
-update_fonts_for_fig(1)
+update_fonts_for_fig(2)
 
-fig = plt.figure(figsize=(3.4,3))
-spec = gridspec.GridSpec(ncols=5, nrows=1, figure=fig,width_ratios=[1,0,1,0.8,2])
+fig = plt.figure(figsize=(7,2))
+spec = gridspec.GridSpec(ncols=5, nrows=1, figure=fig,width_ratios=[1,-0.2,1,0.2,2])
 ax00  = fig.add_subplot(spec[0, 0])
 ax01  = fig.add_subplot(spec[0, 2])
 ax03  = fig.add_subplot(spec[0, 4])
@@ -208,17 +208,19 @@ for n_t in n_t_steps:
 
     print(t_solve_ul, t_built_ul)
 
-    ax[0].plot(df['No of EVs'],t_built_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
-    ax[0].plot(df['No of EVs'],t_built_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
+    ax[0].plot(df['No of EVs'],t_built_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='<', markersize=3)
+    ax[0].plot(df['No of EVs'],t_built_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='o', markersize=3)
 
-    ax[1].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
-    ax[1].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)    
+    ax[1].plot(df['No of EVs'],t_solve_direct,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='<', markersize=3)
+    ax[1].plot(df['No of EVs'],t_solve_ul,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='o', markersize=3)    
 
     
     
     i += 1
 ax[0].set_yscale('log')
 ax[1].set_yscale('log')
+ax[0].set_xscale('log')
+ax[1].set_xscale('log')
 ax[1].set_yticks([])
 
 ax[0].set_ylim([1e-3,3e3])
@@ -226,12 +228,12 @@ ax[1].set_ylim([1e-3,3e3])
 ax[0].set_ylabel('Time (s)', fontsize=9, labelpad=0)
 
 
-ax[0].set_xticks([0,75000, 150000,225000], labels=['0','75','150','225'], rotation=-90)
-ax[1].set_xticks([0,75000, 150000,225000], labels=['0','75','150','225'], rotation=-90)
-ax[2].set_xticks([0,75000, 150000,225000], labels=['0','75','150','225'], rotation=-90)
+# ax[0].set_xticks([0,75000, 150000,225000], labels=['0','75 k','150 k','225 k'], rotation=45)
+# ax[1].set_xticks([0,75000, 150000,225000], labels=['0','75 k','150 k','225 k'], rotation=45)
+# ax[2].set_xticks([0,75000, 150000,225000], labels=['0','75 k','150 k','225 k'], rotation=45)
 
-ax[0].grid(True, which='both', axis='both', linewidth=0.2)
-ax[1].grid(True, which='both', axis='both', linewidth=0.2)
+ax[0].grid(True, which='both', axis='both', linewidth=0.05)
+ax[1].grid(True, which='both', axis='both', linewidth=0.05)
 
 ax[0].text(0.2, 0.95, 'Build', ha='left', va='center', transform=ax[0].transAxes, fontsize=7)
 ax[1].text(0.2, 0.95, 'Solve', ha='left', va='center', transform=ax[1].transAxes, fontsize=7)
@@ -247,17 +249,32 @@ for n_t in n_t_steps:
     df = time_analysis_df1[time_analysis_df1['No of time steps'] == n_t]
     memory_direc_mb = df['Memory used by direct method (bytes)']/1e6
     memory_ul_mb = df['Memory used by ul method (bytes)']/1e6
-    ax[2].plot(df['No of EVs'],memory_direc_mb,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
-    ax[2].plot(df['No of EVs'],memory_ul_mb,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='s', markersize=2)
+    ax[2].plot(df['No of EVs'],memory_direc_mb,label=f'{n_t} time steps', linestyle='--', color=cl_scheme[i], linewidth=0.8, marker='<', markersize=3)
+    ax[2].plot(df['No of EVs'],memory_ul_mb,label=f'{n_t} time steps', linestyle='-', color=cl_scheme[i], linewidth=0.8, marker='o', markersize=3)
     i += 1
 ax[2].set_yscale('log')
+ax[2].set_xscale('log')
 ax[2].set_ylabel('Memory (MB)', fontsize=9, labelpad=-5) # control the horizontal spacing
 
 # ax[2].set_xlabel('Number of EVs (in thousands)',fontsize=9)
-ax[2].grid(True, which='both', axis='both', linewidth=0.2)
+ax[2].grid(True, which='both', axis='both', linewidth=0.05)
 
 custom_line = [plt.Line2D([0], [0],linestyle='--', color='w')]+[plt.Line2D([0], [0], color=cl_scheme[i], lw=1.5) for i in range(len(n_t_steps))] + [plt.Line2D([0], [0], linestyle='--', color='k')]
-fig.legend(custom_line[0:-1], ['No. of time steps:','1','2','4','16'], ncol=5, loc='upper center', handlelength=1, bbox_to_anchor=(0.49, 1.0), fontsize=7)
-fig.text(0.5, -0.01, 'Number of EVs (in thousands)', ha='center', va='center', fontsize=9)
+custom_line_type = [plt.Line2D([0], [2], linestyle='--', color='k', marker='<', markersize=3, linewidth=0.8), plt.Line2D([0], [2], linestyle='-', color='k', marker='o', markersize=3, linewidth=0.8)]
+fig.legend(custom_line[0:-1], ['No. of time steps:','1','2','4','16'], ncol=5, loc='upper right', handlelength=1, bbox_to_anchor=(0.49, 1.05), fontsize=7)
+fig.legend(custom_line_type, ['Direct aggregation','UL-Flexibility'], ncol=2, loc='upper right', handlelength=3, bbox_to_anchor=(0.9, 1.05), fontsize=7)
+fig.text(0.5, -0.1, 'Number of EVs', ha='center', va='center', fontsize=9)
+fig.savefig('figures/memory_time_analysis_multi_ts_log.pdf', dpi=600, bbox_inches='tight')
+# %%
 
+import pandas as pd
+
+# create a 4x7 dataframe with random numbers
+
+df_1 = pd.DataFrame(data={'PDa':[2,1,2,3,1],
+                          'PDb':[3,2,1,2,3],
+                          'PDc':[2,3,2,1,3]}
+                          )
+
+df_1.T.to_numpy().reshape((1,len(df_1)*len(df_1.columns)))
 # %%
