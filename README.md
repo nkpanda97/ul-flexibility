@@ -1,4 +1,4 @@
-<img src="figures/sc1.gif" alt="GIF" width="150" height="150"> <img src="figures/sc2.gif" alt="GIF" width="150" height="150">
+<img src="figures/sc1.gif" alt="GIF" width="300" height="300">       <img src="figures/sc2.gif" alt="GIF" width="300" height="300">
 
 # UL-Flexibility
 
