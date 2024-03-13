@@ -1,3 +1,5 @@
+<img src="figures/sc1.gif" alt="GIF" width="150" height="150"> <img src="figures/sc2.gif" alt="GIF" width="150" height="150">
+
 # UL-Flexibility
 
 ![Static Badge](https://img.shields.io/badge/MADE_WITH-PYTHON_%26_MATLAB-orange?style=for-the-badge)
