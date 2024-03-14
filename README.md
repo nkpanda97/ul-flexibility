@@ -1,4 +1,4 @@
-<img src="figures/sc1.gif" alt="GIF" width="300" height="300">      <img src="figures/giphy_ev.gif" alt="https://giphy.com/gifs/araldeutschland-charging-aral-electriccar-IaVWq3MSU6EMsVCTkz" width="300" height="300">     <img src="figures/sc2.gif" alt="GIF" width="300" height="300">
+<img src="figures/sc1.gif" alt="GIF" width="250" height="250">      <img src="figures/giphy_ev.gif" alt="https://giphy.com/gifs/araldeutschland-charging-aral-electriccar-IaVWq3MSU6EMsVCTkz" width="250" height="250">     <img src="figures/sc2.gif" alt="GIF" width="250" height="250">
 
 # UL-Flexibility [![DOI](https://zenodo.org/badge/771205916.svg)](https://zenodo.org/doi/10.5281/zenodo.10811009)
 
