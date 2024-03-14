@@ -1,6 +1,6 @@
-<img src="figures/sc1.gif" alt="GIF" width="300" height="300">       <img src="figures/sc2.gif" alt="GIF" width="300" height="300">
+<img src="figures/sc1.gif" alt="GIF" width="300" height="300">      <img src="figures/giphy_ev.gif" alt="https://giphy.com/gifs/araldeutschland-charging-aral-electriccar-IaVWq3MSU6EMsVCTkz" width="400" height="300">     <img src="figures/sc2.gif" alt="GIF" width="300" height="300">
 
-# UL-Flexibility
+# UL-Flexibility [![DOI](https://zenodo.org/badge/771205916.svg)](https://zenodo.org/doi/10.5281/zenodo.10811009)
 
 ![Static Badge](https://img.shields.io/badge/MADE_WITH-PYTHON_%26_MATLAB-orange?style=for-the-badge)
 
@@ -61,6 +61,7 @@ or
 ```bash
 conda install --file requirements.txt
 ```
+
 For the optimization solver, we used [![Gurobi Version](https://img.shields.io/badge/Gurobi-10.0.2-blue.svg)](https://www.gurobi.com/)
 . You can install the Gurobi solver by following the instructions in the [Gurobi Documentation](https://www.gurobi.com/documentation/10.0/quickstart_mac/installing_the_anaconda_py.html) for Mac and Linux and [Gurobi Documentation](https://www.gurobi.com/documentation/10.0/quickstart_windows/installing_the_anaconda_py.html) for Windows.
 
@@ -71,6 +72,7 @@ For the optimization solver, we used [![Gurobi Version](https://img.shields.io/b
 If you liked this work and want to use it in your research, please consider citing the original paper:
 
 The paper can be found at [arXiv](https://arxiv.org/abs/2310.02729)
+
 ```bibtex
 @misc{panda2023efficient,
       title={Efficient Quantification and Representation of Aggregate Flexibility in Electric Vehicles}, 
@@ -84,13 +86,20 @@ The paper can be found at [arXiv](https://arxiv.org/abs/2310.02729)
 
 If you re-use part of the code or some of the functions, please consider citing the repository:
 
-```bibtex   
-@misc{panda2023ulflexibility,
-      title={UL-Flexibility},
-      author={Nanda Kishor Panda and Simon H. Tindemans},
-      year={2023},
-      eprint={2310.02729},
-      archivePrefix={arXiv},
-      primaryClass={eess.SY}
+```bibtex  
+@software{nanda_kishor_panda_2024_10811010,
+  author       = {Nanda Kishor Panda},
+  title        = {nkpanda97/ul-flexiility: Version 0},
+  month        = mar,
+  year         = 2024,
+  publisher    = {Zenodo},
+  version      = {pre-release},
+  doi          = {10.5281/zenodo.10811010},
+  url          = {https://doi.org/10.5281/zenodo.10811010}
 }
+
 ```
+
+## Funding
+
+The research was supported by the [ROBUST](https://tki-robust.nl/) project, which received funding from the MOOI subsidy programme under grant agreement MOOI32014 by the Netherlands Ministry of Economic Affairs and Climate Policy and the Ministry of the Interior and Kingdom Relations, executed by the Netherlands Enterprise Agency. The authors would like to thank ROBUST consortium partners for fruitful discussions during the preparation of this paper
